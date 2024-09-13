@@ -1,6 +1,19 @@
+"""
+Project: Deploy a ML Model
+Author: Tuan Doan
+Date: 2024-09-14
+"""
+
 from sklearn.metrics import fbeta_score, precision_score, recall_score
-
-
+from sklearn.linear_model import LogisticRegression
+import pandas as pd
+import sys
+# from data import process_data
+try:
+    from module.data import process_data
+except ModuleNotFoundError:
+    sys.path.append('./')
+    from module.data import process_data
 # Optional: implement hyperparameter tuning.
 def train_model(X_train, y_train):
     """
@@ -17,8 +30,10 @@ def train_model(X_train, y_train):
     model
         Trained machine learning model.
     """
+    lr_model = LogisticRegression(max_iter=1000, random_state=8071)
+    lr_model.fit(X_train, y_train.ravel())
 
-    pass
+    return lr_model
 
 
 def compute_model_metrics(y, preds):
@@ -57,4 +72,58 @@ def inference(model, X):
     preds : np.array
         Predictions from the model.
     """
-    pass
+    preds = model.predict(X)
+    return preds
+
+def compute_metrics_with_slices_data(
+        df, cat_columns, label, encoder, lb, model, slice_output_path):
+    """
+    Compute metrics of the model on slices of the data
+
+    Args:
+        df (pd.DataFrame): Input dataframe
+        cat_columns (list): list of categorical columns
+        label (str): Class label string
+        encoder (OneHotEncoder): fitted One Hot Encoder
+        lb (LabelBinarizer): label binarizer
+        model (module.model): Trained model binary file
+        slice_output_path (str): path to save the slice output
+
+    Returns:
+        metrics (pd.DataFrame): Dataframe containing the metrics
+    """
+    rows_list = list()
+    for feature in cat_columns:
+        for category in df[feature].unique():
+            row = {}
+            tmp_df = df[df[feature] == category]
+
+            x, y, _, _ = process_data(
+                X=tmp_df,
+                categorical_features=cat_columns,
+                label=label,
+                training=False,
+                encoder=encoder,
+                lb=lb
+            )
+
+            preds = inference(model, x)
+            precision, recall, fbeta = compute_model_metrics(y, preds)
+
+            row['feature'] = feature
+            row['precision'] = precision
+            row['recall'] = recall
+            row['f1'] = fbeta
+            row['category'] = category
+            rows_list.append(row)
+
+    metrics = pd.DataFrame(
+        rows_list,
+        columns=[
+            "feature",
+            "precision",
+            "recall",
+            "f1",
+            "category"])
+    metrics.to_csv(slice_output_path, index=False)
+    return metrics
