@@ -63,7 +63,7 @@ class CensusInputData(BaseModel):
 
 @app.get(path="/")
 def welcome_root():
-    return {"message": "Welcome to Tuan Doan project!"}
+    return {"message": "Welcome to Tuan project!"}
 
 
 @app.post(path="/infer")
