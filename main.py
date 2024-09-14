@@ -1,4 +1,3 @@
-# Put the code for your API here.
 from typing import Dict
 import pickle
 import pandas as pd
@@ -64,7 +63,7 @@ class CensusInputData(BaseModel):
 
 @app.get(path="/")
 def welcome_root():
-    return {"message": "Welcome to Tuan project!"}
+    return {"message": "Welcome to Tuan Doan project!"}
 
 
 @app.post(path="/infer")
